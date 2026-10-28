@@ -1,0 +1,1421 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>KnowMe</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Layout concept: a calm single column desk. Pill tabs on top, one working panel below.
+   The flashcard is the only loud object; the highlighter swipe marks what matters. */
+:root {
+  --bg: #F1F4F6;
+  --surface: #FFFFFF;
+  --field: #F6F8F9;
+  --ink: #16222B;
+  --mute: #566873;
+  --line: #D8E0E5;
+  --accent: #0E7C86;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #DCEFF0;
+  --marker: #F6D77A;
+  --bad: #B3423A;
+  --ok: #2B7A4B;
+  --warn: #9A6A00;
+  --display: "Bricolage Grotesque", "Trebuchet MS", system-ui, sans-serif;
+  --body: "Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F171C; --surface: #172229; --field: #0F171C; --ink: #E6EEF2; --mute: #94A6B1;
+    --line: #2A3943; --accent: #4FC3CC; --accent-ink: #062226; --accent-soft: #163439;
+    --marker: #8A6D12; --bad: #F08A80; --ok: #7CCB9A; --warn: #E9B44C;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F171C; --surface: #172229; --field: #0F171C; --ink: #E6EEF2; --mute: #94A6B1;
+  --line: #2A3943; --accent: #4FC3CC; --accent-ink: #062226; --accent-soft: #163439;
+  --marker: #8A6D12; --bad: #F08A80; --ok: #7CCB9A; --warn: #E9B44C;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 16px/1.55 var(--body);
+  padding-block: 18px 56px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  min-height: 100vh;
+}
+.wrap { max-width: 980px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+h1, h2, h3 { font-family: var(--display); margin: 0; line-height: 1.15; text-wrap: balance; letter-spacing: -0.01em; }
+h2 { font-size: 26px; font-weight: 700; }
+h3 { font-size: 18px; font-weight: 700; }
+p { margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+
+/* header */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.brand { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; min-width: 0; }
+.brand h1 { font-size: 32px; font-weight: 700; }
+.brand h1 span { color: var(--accent); }
+.tag { font-family: var(--display); font-weight: 500; font-size: 17px; background: linear-gradient(transparent 52%, var(--marker) 52%, var(--marker) 92%, transparent 92%); padding: 0 4px; }
+.iconbtn { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; padding: 6px 14px; cursor: pointer; font-size: 14px; }
+.iconbtn:hover { border-color: var(--accent); }
+
+/* tabs */
+nav.tabs { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+nav.tabs::-webkit-scrollbar { display: none; }
+.tab { flex: none; text-decoration: none; color: var(--mute); font-weight: 500; padding: 8px 16px; border-radius: 999px; border: 1px solid transparent; display: inline-flex; gap: 8px; align-items: center; }
+.tab:hover { color: var(--ink); background: var(--surface); }
+.tab[aria-current="page"] { background: var(--ink); color: var(--bg); }
+.badge { font-family: var(--mono); font-size: 12px; background: var(--marker); color: var(--ink); border-radius: 999px; padding: 0 7px; line-height: 18px; }
+
+/* generic pieces */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 22px; min-width: 0; }
+.stack { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: center; min-width: 0; }
+.grow { flex: 1 1 200px; min-width: 0; }
+.muted { color: var(--mute); }
+.small { font-size: 14px; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.eyebrow { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--mute); font-weight: 600; }
+.mark { background: linear-gradient(transparent 55%, var(--marker) 55%, var(--marker) 92%, transparent 92%); padding: 0 2px; }
+
+.btn { border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); font-weight: 600; padding: 10px 18px; border-radius: 10px; cursor: pointer; display: inline-flex; gap: 8px; align-items: center; justify-content: center; }
+.btn:hover { filter: brightness(1.06); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; filter: none; }
+.btn.ghost { background: transparent; color: var(--ink); border-color: var(--line); }
+.btn.ghost:hover { border-color: var(--accent); }
+.btn.danger { background: transparent; color: var(--bad); border-color: var(--bad); }
+.btn.sm { padding: 5px 12px; font-size: 14px; border-radius: 8px; }
+
+label.f { display: flex; flex-direction: column; gap: 6px; font-size: 14px; color: var(--mute); font-weight: 500; min-width: 0; }
+input[type="text"], input[type="number"], input[type="date"], select, textarea {
+  background: var(--field); border: 1px solid var(--line); border-radius: 10px; padding: 9px 12px; width: 100%; color: var(--ink); min-width: 0;
+}
+textarea { resize: vertical; min-height: 120px; line-height: 1.5; }
+input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); flex: none; }
+.check { display: flex; gap: 10px; align-items: center; font-size: 15px; }
+
+.track { height: 8px; background: var(--accent-soft); border-radius: 99px; overflow: hidden; }
+.track > i { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width 0.3s ease; }
+
+.pill { display: inline-flex; font-size: 12px; font-weight: 600; padding: 2px 9px; border-radius: 99px; background: var(--accent-soft); color: var(--accent); }
+.pill.warn { background: color-mix(in srgb, var(--marker) 55%, transparent); color: var(--ink); }
+
+/* study */
+.hero { display: grid; gap: 18px; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); align-items: start; }
+.counts { display: flex; gap: 26px; flex-wrap: wrap; }
+.counts b { display: block; font-family: var(--mono); font-weight: 500; font-size: 34px; line-height: 1.1; }
+.counts span { font-size: 13px; color: var(--mute); }
+
+.fc { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 1px 0 var(--line), 0 14px 30px -18px rgba(14, 40, 50, 0.35); overflow: hidden; }
+.fc-head { display: flex; justify-content: space-between; gap: 10px; padding: 10px 18px; border-bottom: 1px solid var(--line); background: var(--accent-soft); font-size: 13px; color: var(--accent); font-weight: 600; flex-wrap: wrap; }
+.fc-body { padding: 36px 26px; text-align: center; min-height: 190px; display: flex; flex-direction: column; justify-content: center; gap: 22px; }
+.fc-q { font-family: var(--display); font-size: clamp(22px, 3.6vw, 32px); font-weight: 500; line-height: 1.25; text-wrap: balance; overflow-wrap: anywhere; }
+.fc-a { border-top: 2px dashed var(--line); padding-top: 22px; font-size: clamp(18px, 2.6vw, 22px); overflow-wrap: anywhere; white-space: pre-wrap; animation: rise 0.25s ease both; }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .fc-a { animation: none; } .track > i { transition: none; } }
+.fc-foot { padding: 0 22px 22px; display: flex; flex-direction: column; gap: 14px; }
+.rate { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+.rate button { border: 1px solid var(--line); border-top-width: 4px; background: var(--surface); border-radius: 10px; padding: 10px 6px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; font-weight: 600; }
+.rate button small { font-family: var(--mono); font-weight: 400; color: var(--mute); font-size: 12px; }
+.rate button:hover { background: var(--field); }
+.rate .r0 { border-top-color: var(--bad); }
+.rate .r1 { border-top-color: var(--warn); }
+.rate .r2 { border-top-color: var(--accent); }
+.rate .r3 { border-top-color: var(--ok); }
+.verdict { font-size: 15px; padding: 8px 12px; border-radius: 10px; background: var(--field); border: 1px solid var(--line); text-align: left; overflow-wrap: anywhere; }
+.verdict.good { border-color: var(--ok); }
+.verdict.close { border-color: var(--warn); }
+.verdict.miss { border-color: var(--bad); }
+.aibox { text-align: left; background: var(--field); border: 1px dashed var(--accent); border-radius: 10px; padding: 12px 14px; font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* decks */
+.decks { display: grid; gap: 14px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); }
+.deck { display: flex; flex-direction: column; gap: 12px; }
+.deck h3 { overflow-wrap: anywhere; }
+.cardrow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto; gap: 14px; padding: 12px 0; border-top: 1px solid var(--line); align-items: start; }
+.cardrow > div { overflow-wrap: anywhere; }
+.cardrow .acts { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+.stagedrow { display: grid; grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr); gap: 12px; padding: 12px 0; border-top: 1px solid var(--line); align-items: start; }
+.stagedrow textarea { min-height: 64px; }
+
+/* quiz */
+.opts { display: grid; gap: 10px; }
+.opt { text-align: left; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 12px 14px; cursor: pointer; overflow-wrap: anywhere; }
+.opt:hover:not(:disabled) { border-color: var(--accent); }
+.opt.right { border-color: var(--ok); background: color-mix(in srgb, var(--ok) 14%, var(--surface)); }
+.opt.wrong { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, var(--surface)); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.seg button { border: 0; background: transparent; padding: 8px 14px; cursor: pointer; font-weight: 500; }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+
+/* room */
+.timer { font-family: var(--mono); font-size: clamp(56px, 13vw, 96px); font-weight: 500; line-height: 1; letter-spacing: -0.02em; }
+.peers { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); }
+.peer { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; background: var(--field); min-width: 0; }
+.peer b { overflow-wrap: anywhere; }
+.dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; background: var(--mute); }
+.dot.focus { background: var(--accent); }
+.dot.break { background: var(--warn); }
+
+/* progress */
+.tiles { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.tile { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 2px; }
+.tile b { font-family: var(--mono); font-weight: 500; font-size: 32px; line-height: 1.15; }
+.tile span { font-size: 13px; color: var(--mute); }
+.scroll { overflow-x: auto; }
+.scroll svg { min-width: 520px; width: 100%; height: auto; display: block; }
+svg .bar { fill: var(--accent-soft); stroke: var(--accent); stroke-width: 1; }
+svg .bar.today { fill: var(--accent); }
+svg .axis { stroke: var(--line); stroke-width: 1; }
+svg text { fill: var(--mute); font: 11px var(--mono); }
+svg text.val { fill: var(--ink); }
+
+#toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(18px + env(safe-area-inset-bottom, 0px)); background: var(--ink); color: var(--bg); padding: 10px 18px; border-radius: 10px; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity 0.2s; max-width: calc(100% - 32px); z-index: 20; }
+#toast.on { opacity: 1; }
+
+body:not(.ai) .needs-ai { display: none !important; }
+body.ai .no-ai-note { display: none !important; }
+body:not(.dl) .needs-dl { display: none !important; }
+
+@media (max-width: 760px) {
+  .hero { grid-template-columns: minmax(0, 1fr); }
+  .cardrow { grid-template-columns: minmax(0, 1fr); }
+  .cardrow .acts { justify-content: flex-start; }
+  .stagedrow { grid-template-columns: auto minmax(0, 1fr); }
+  .stagedrow > :nth-child(3) { grid-column: 2; }
+  .rate { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .panel { padding: 16px; }
+  .fc-body { padding: 26px 16px; }
+}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>Know<span>Me</span></h1>
+      <span class="tag">Study with Me!</span>
+    </div>
+    <div class="row" style="gap:8px">
+      <span class="pill" id="syncPill" role="status" aria-live="polite"></span>
+      <button class="iconbtn" id="themeBtn" type="button">Switch theme</button>
+    </div>
+  </header>
+  <nav class="tabs" id="tabs" aria-label="Sections"></nav>
+  <main id="app"></main>
+</div>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ---------- helpers ---------- */
+  var KEY = "knowme:v1";
+  var DAY = 86400000;
+  function $(s, r) { return (r || document).querySelector(s); }
+  function uid() { return Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-3); }
+  function dayKey(t) {
+    var d = new Date(t === undefined ? Date.now() : t);
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  }
+  function el(tag, props) {
+    var e = document.createElement(tag);
+    if (props) {
+      Object.keys(props).forEach(function (k) {
+        var v = props[k];
+        if (v === null || v === undefined || v === false) return;
+        if (k === "class") e.className = v;
+        else if (k === "text") e.textContent = v;
+        else if (k === "on") Object.keys(v).forEach(function (ev) { e.addEventListener(ev, v[ev]); });
+        else if (k === "for" || k.indexOf("-") > -1 || k === "role") e.setAttribute(k, v === true ? "" : v);
+        else if (k in e) e[k] = v;
+        else e.setAttribute(k, v === true ? "" : v);
+      });
+    }
+    var kids = Array.prototype.slice.call(arguments, 2);
+    (function add(list) {
+      list.forEach(function (k) {
+        if (Array.isArray(k)) return add(k);
+        if (k === null || k === undefined || k === false) return;
+        e.append(k.nodeType ? k : document.createTextNode(String(k)));
+      });
+    })(kids);
+    return e;
+  }
+  function toast(msg) {
+    var t = $("#toast"); t.textContent = msg; t.classList.add("on");
+    clearTimeout(toast._t); toast._t = setTimeout(function () { t.classList.remove("on"); }, 3200);
+  }
+  function plural(n, w) { return n + " " + w + (n === 1 ? "" : "s"); }
+  function fmtInterval(min) {
+    if (min < 60) return Math.max(1, Math.round(min)) + "m";
+    var d = min / 1440;
+    if (d < 7) return Math.max(1, Math.round(d)) + "d";
+    if (d < 30) return Math.round(d / 7) + "w";
+    return Math.round(d / 30) + "mo";
+  }
+
+  /* ---------- data ---------- */
+  function newCard(front, back) { return { id: uid(), front: front, back: back, ease: 2.5, interval: 0, reps: 0, lapses: 0, due: 0 }; }
+  function defaults() {
+    return { decks: [], log: {}, prefs: { typeFirst: false, newPerDay: 10, nick: "", room: "knowme-lounge", theme: "", examDate: "", examDeck: "all", focusMin: 25, breakMin: 5 } };
+  }
+  function seeded() {
+    var s = defaults();
+    var bio = [
+      ["Which organelle makes most of a cell's ATP?", "The mitochondrion, through cellular respiration."],
+      ["What does the rough endoplasmic reticulum do?", "It makes proteins. Ribosomes sit on its surface."],
+      ["What is the job of the Golgi apparatus?", "It modifies, sorts and packages proteins and lipids for transport."],
+      ["Which structure controls what enters and leaves a cell?", "The plasma membrane, which is selectively permeable."],
+      ["Where does photosynthesis happen in a plant cell?", "In the chloroplasts."],
+      ["What do lysosomes contain?", "Digestive enzymes that break down waste and worn-out parts."],
+      ["Name one difference between plant and animal cells.", "Plant cells have a cell wall, chloroplasts and a large central vacuole. Animal cells do not."],
+      ["What is osmosis?", "Water moving across a selectively permeable membrane toward the side with more dissolved solute."]
+    ];
+    var study = [
+      ["What is the spacing effect?", "Memory lasts longer when reviews are spread out than when they are crammed together."],
+      ["Why does retrieval practice beat rereading?", "Pulling an answer out of memory strengthens it. Rereading only makes it feel familiar."],
+      ["What is interleaving?", "Mixing topics or problem types in one session instead of studying them in blocks."],
+      ["What are the steps of the Feynman technique?", "Pick a concept, explain it simply as if teaching, spot the gaps, go back to the source, then simplify again."],
+      ["What is the forgetting curve?", "The steep drop in recall after learning unless the memory is reviewed."],
+      ["What happens when you press Again on a card?", "It comes back later in the same session and its interval resets."]
+    ];
+    s.decks.push({ id: uid(), name: "Biology: Cells", sample: true, cards: bio.map(function (c) { return newCard(c[0], c[1]); }) });
+    s.decks.push({ id: uid(), name: "How to study", sample: true, cards: study.map(function (c) { return newCard(c[0], c[1]); }) });
+    return s;
+  }
+  function load() {
+    try {
+      var r = localStorage.getItem(KEY);
+      if (r) {
+        var o = JSON.parse(r);
+        if (o && Array.isArray(o.decks)) {
+          var d = defaults();
+          return { decks: o.decks, log: o.log || {}, prefs: Object.assign(d.prefs, o.prefs || {}) };
+        }
+      }
+    } catch (e) {}
+    return seeded();
+  }
+  var S = load();
+  function localSave() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  function save() { localSave(); scheduleSync(); }
+
+  /* ---------- cloud database (per-user, plus a shared class library) ---------- */
+  var db = null, userNS = null, meId = null, cloud = "local";
+  var synced = { decks: {}, profile: "" }, syncTimer = null, chain = Promise.resolve(), retried = false;
+  var libDocs = [], libUnsub = null;
+
+  function setCloud(state) {
+    cloud = state;
+    var p = document.getElementById("syncPill"); if (!p) return;
+    var map = {
+      local: "Saved on this device", loading: "Connecting...", ok: "Saved to your account", saving: "Saving...",
+      readonly: "This device only", error: "Cloud sync paused"
+    };
+    p.textContent = map[state] || "";
+    p.className = "pill" + (state === "ok" ? "" : state === "readonly" || state === "error" ? " warn" : "");
+    p.title = state === "readonly" ? "Your access level cannot save to the cloud. Ask the owner for Contributor access." : "";
+  }
+  function bodyOf(d) { return { name: d.name, sample: !!d.sample, created: d.created, cards: d.cards }; }
+  function profileJson() { return JSON.stringify({ log: S.log, prefs: S.prefs }); }
+  function scheduleSync() {
+    if (!db || !meId || (cloud !== "ok" && cloud !== "saving")) return;
+    clearTimeout(syncTimer); setCloud("saving");
+    syncTimer = setTimeout(function () { syncTimer = null; flushNow(); }, 1500);
+  }
+  function flushNow() { chain = chain.then(doFlush).catch(function () {}); return chain; }
+  function dbFail(e) {
+    var c = e && e.code;
+    if (c === "invalid_argument") { setCloud("readonly"); toast("Your access level cannot save to the cloud, so decks stay on this device."); return; }
+    if (c === "quota_exceeded") { setCloud("error"); toast("The cloud storage for this page is full. Delete some decks."); return; }
+    if (c === "unavailable" && !retried) { retried = true; setCloud("saving"); syncTimer = setTimeout(function () { syncTimer = null; flushNow(); }, 3000); return; }
+    setCloud("error");
+  }
+  function doFlush() {
+    if (!db || !meId || cloud === "readonly") return Promise.resolve();
+    var prof = db.doc("data/users/" + meId + "/profile"), decks = prof.collection("decks");
+    var p = Promise.resolve();
+    S.decks.forEach(function (d, i) {
+      p = p.then(function () {
+        if (!d.created) d.created = Date.now() + i;
+        var body = bodyOf(d), h = JSON.stringify(body);
+        if (synced.decks[d.id] === h) return;
+        return decks.doc(d.id).set(body).then(function () { synced.decks[d.id] = h; });
+      });
+    });
+    Object.keys(synced.decks).forEach(function (id) {
+      p = p.then(function () {
+        if (findDeck(id)) return;
+        return decks.doc(id).delete().then(function () { delete synced.decks[id]; });
+      });
+    });
+    p = p.then(function () {
+      var ph = profileJson();
+      if (synced.profile === ph) return;
+      return prof.set({ v: 1, log: S.log, prefs: S.prefs }).then(function () { synced.profile = ph; });
+    });
+    return p.then(function () { retried = false; if (!syncTimer) setCloud("ok"); localSave(); }).catch(dbFail);
+  }
+  function clone(x) { return JSON.parse(JSON.stringify(x)); }
+  function pull() {
+    var prof = db.doc("data/users/" + meId + "/profile");
+    return Promise.all([prof.get(), prof.collection("decks").get()]).then(function (r) {
+      var psnap = r[0], dsnap = r[1];
+      var remote = dsnap.docs.map(function (s) {
+        var x = clone(s.data() || {});
+        return { id: s.id, name: String(x.name || "Untitled"), sample: !!x.sample, created: x.created || 0, cards: Array.isArray(x.cards) ? x.cards : [] };
+      }).sort(function (a, b) { return a.created - b.created; });
+      if (psnap.exists || remote.length) {
+        var pd = psnap.exists ? clone(psnap.data()) : {}, dd = defaults();
+        S = { decks: remote, log: pd.log || {}, prefs: Object.assign(dd.prefs, pd.prefs || {}) };
+        synced = { decks: {}, profile: profileJson() };
+        S.decks.forEach(function (d) { synced.decks[d.id] = JSON.stringify(bodyOf(d)); });
+        localSave(); applyTheme();
+        return null;
+      }
+      synced = { decks: {}, profile: "" };
+      return doFlush();
+    });
+  }
+  function startCloud() {
+    Promise.all([useCap("db"), useCap("user")]).then(function (r) {
+      db = r[0]; userNS = r[1];
+      if (!db || !userNS) { db = null; setCloud("local"); return; }
+      return Promise.resolve(userNS.id()).then(function (id) {
+        if (!id) { db = null; setCloud("local"); return; }
+        meId = id; setCloud("loading");
+        return pull().then(function () {
+          if (cloud === "loading") setCloud("ok");
+          if (!sess && !quiz) render();
+          startLibrary();
+        }).catch(function (e) { dbFail(e); });
+      });
+    }).catch(function () { setCloud("local"); });
+  }
+  function startLibrary() {
+    if (!db || libUnsub) return;
+    try {
+      libUnsub = db.collection("library").onSnapshot(function (snap) {
+        libDocs = snap.docs.map(function (s) {
+          var x = clone(s.data() || {});
+          return { uid: s.id, decks: Array.isArray(x.decks) ? x.decks : [] };
+        });
+        drawLibrary();
+      }, function () { libDocs = []; });
+    } catch (e) {}
+  }
+  function myLibDecks() { var m = libDocs.filter(function (x) { return x.uid === meId; })[0]; return m ? m.decks.slice() : []; }
+  function isShared(deckId) { return myLibDecks().some(function (d) { return d.id === deckId; }); }
+  function setMyLib(list) {
+    return db.doc("library/" + meId).set({ decks: list, at: Date.now() }).then(function () {
+      var m = libDocs.filter(function (x) { return x.uid === meId; })[0];
+      if (m) m.decks = list; else libDocs.push({ uid: meId, decks: list });
+    });
+  }
+  function toggleShare(deck) {
+    var list = myLibDecks(), was = list.some(function (d) { return d.id === deck.id; });
+    list = list.filter(function (d) { return d.id !== deck.id; });
+    if (!was) {
+      if (list.length >= 8) { toast("You can share up to 8 decks."); return; }
+      list.push({ id: deck.id, name: deck.name, cards: deck.cards.slice(0, 300).map(function (c) { return { front: c.front, back: c.back }; }) });
+    }
+    setMyLib(list).then(function () { toast(was ? "Stopped sharing." : "Shared with your class."); render(); }).catch(function () { toast("Could not update the library."); });
+  }
+  function drawLibrary() {
+    var box = document.getElementById("lib"); if (!box) return;
+    box.textContent = "";
+    var items = [];
+    libDocs.forEach(function (doc) { doc.decks.forEach(function (d) { if (d && d.name && Array.isArray(d.cards) && d.cards.length) items.push({ owner: doc.uid, deck: d }); }); });
+    if (!items.length) { box.append(el("p", { class: "muted small", text: "No shared decks yet. Open one of your decks and choose Share to class library." })); return; }
+    var names = {};
+    items.forEach(function (it) {
+      var mine = it.owner === meId;
+      var who = el("span", { class: "small muted", text: mine ? "Shared by you" : "Shared by a classmate" });
+      it.who = who;
+      box.append(el("div", { class: "cardrow" },
+        el("div", null, el("div", { text: String(it.deck.name).slice(0, 80) }), who),
+        el("div", { class: "muted small", text: plural(it.deck.cards.length, "card") }),
+        el("div", { class: "acts" }, mine
+          ? el("button", { class: "btn ghost sm", type: "button", on: { click: function () {
+              setMyLib(myLibDecks().filter(function (d) { return d.id !== it.deck.id; })).then(function () { toast("Stopped sharing."); render(); }).catch(function () { toast("Could not update the library."); }); } } }, "Stop sharing")
+          : el("button", { class: "btn sm", type: "button", on: { click: function () {
+              var cards = it.deck.cards.filter(function (c) { return c && typeof c.front === "string" && typeof c.back === "string"; }).map(function (c) { return newCard(c.front, c.back); });
+              S.decks.push({ id: uid(), name: String(it.deck.name).slice(0, 60), cards: cards, created: Date.now() });
+              save(); toast("Added " + plural(cards.length, "card") + " to your decks."); render(); } } }, "Add to my decks"))));
+    });
+    if (userNS) {
+      var ids = items.map(function (it) { return it.owner; }).filter(function (v, i, a) { return v !== meId && a.indexOf(v) === i; });
+      if (ids.length) Promise.resolve(userNS.profiles(ids)).then(function (ps) {
+        items.forEach(function (it) { var p = ps && ps[it.owner]; if (p && p.name && it.who && it.owner !== meId) it.who.textContent = "Shared by " + p.name; });
+      }).catch(function () {});
+    }
+  }
+  setCloud("local");
+
+  function findDeck(id) { return S.decks.filter(function (d) { return d.id === id; })[0] || null; }
+  function findCard(id) {
+    for (var i = 0; i < S.decks.length; i++) {
+      for (var j = 0; j < S.decks[i].cards.length; j++) {
+        if (S.decks[i].cards[j].id === id) return { card: S.decks[i].cards[j], deck: S.decks[i] };
+      }
+    }
+    return null;
+  }
+  function allCards(deckId) {
+    var out = [];
+    S.decks.forEach(function (d) {
+      if (deckId && deckId !== "all" && d.id !== deckId) return;
+      d.cards.forEach(function (c) { out.push({ card: c, deck: d }); });
+    });
+    return out;
+  }
+  function logToday() { var k = dayKey(); if (!S.log[k]) S.log[k] = { n: 0, ok: 0, nw: 0 }; return S.log[k]; }
+
+  /* ---------- scheduling (spaced repetition) ---------- */
+  function schedule(card, r) {
+    var c = { ease: card.ease || 2.5, interval: card.interval || 0, reps: card.reps || 0, lapses: card.lapses || 0 };
+    var minutes;
+    if (r === 0) {
+      c.reps = 0; c.lapses++; c.ease = Math.max(1.3, c.ease - 0.2); c.interval = 0; minutes = 10;
+    } else {
+      if (r === 1) { c.interval = Math.max(1, Math.round((c.interval || 1) * 1.2)); c.ease = Math.max(1.3, c.ease - 0.15); }
+      else if (r === 2) { c.interval = c.reps === 0 ? 1 : c.reps === 1 ? 3 : Math.max(1, Math.round(c.interval * c.ease)); }
+      else { c.interval = c.reps === 0 ? 4 : Math.round(Math.max(c.interval, 1) * c.ease * 1.3); c.ease += 0.15; }
+      c.reps++;
+      minutes = c.interval * 1440;
+    }
+    c.due = Date.now() + minutes * 60000;
+    c._min = minutes;
+    return c;
+  }
+
+  function counts(deckId) {
+    var now = Date.now(), cs = allCards(deckId);
+    var due = cs.filter(function (x) { return x.card.due > 0 && x.card.due <= now; }).length;
+    var fresh = cs.filter(function (x) { return x.card.due === 0; }).length;
+    var nw = (S.log[dayKey()] || {}).nw || 0;
+    var newAvail = Math.min(fresh, Math.max(0, S.prefs.newPerDay - nw));
+    return { due: due, fresh: fresh, newAvail: newAvail, total: cs.length };
+  }
+  function streak() {
+    var n = 0, t = Date.now();
+    if (!(S.log[dayKey(t)] && S.log[dayKey(t)].n > 0)) t -= DAY;
+    while (S.log[dayKey(t)] && S.log[dayKey(t)].n > 0) { n++; t -= DAY; }
+    return n;
+  }
+
+  /* ---------- capabilities (Claude, rooms, downloads) ---------- */
+  var sample = null, roomNS = null, dl = null, roomState = "pending";
+  function useCap(n) {
+    try {
+      if (window.claude && window.claude.use) return Promise.resolve(window.claude.use(n)).catch(function () { return null; });
+    } catch (e) {}
+    return Promise.resolve(null);
+  }
+  useCap("sample").then(function (s) { sample = s; document.body.classList.toggle("ai", !!s); });
+  useCap("downloads").then(function (d) { dl = d; document.body.classList.toggle("dl", !!d); });
+  useCap("room").then(function (r) { roomNS = r; roomState = r ? "ok" : "none"; if (view === "room") render(); });
+
+  function aiError(e) {
+    var c = e && e.code;
+    if (c === "not_granted") return "Claude was not allowed to run for this page. Allow it when asked, then try again.";
+    if (c === "rate_limited") return "Too many requests right now. Wait a minute, then try again.";
+    if (c === "session_expired") return "Sign in to Claude again, then try again.";
+    if (c === "invalid_json") return "Claude's reply could not be read as cards. Try a shorter set of notes.";
+    if (c === "refused") return "Claude could not help with that text. Try different notes.";
+    if (c === "sampling_disabled") return "Claude is not available for this account.";
+    return "Something went wrong reaching Claude. Try again.";
+  }
+  function saveFile(name, data) {
+    if (!dl) return;
+    dl.save({ filename: name, data: data }).then(function () { toast("Saved " + name); }).catch(function (e) {
+      if (e && e.code === "declined") return;
+      toast("Could not save the file here.");
+    });
+  }
+
+  /* ---------- routing / shell ---------- */
+  var VIEWS = [
+    ["study", "Study"], ["decks", "Decks"], ["make", "Make cards"], ["quiz", "Quiz"], ["room", "Study with me"], ["progress", "Progress"]
+  ];
+  var view = "study";
+  function readHash() {
+    var h = (location.hash || "").replace("#", "");
+    return VIEWS.some(function (v) { return v[0] === h; }) ? h : "study";
+  }
+  function renderTabs() {
+    var due = counts("all").due;
+    var nav = $("#tabs"); nav.textContent = "";
+    VIEWS.forEach(function (v) {
+      nav.append(el("a", { class: "tab", href: "#" + v[0], "aria-current": v[0] === view ? "page" : null },
+        v[1], v[0] === "study" && due > 0 ? el("span", { class: "badge", text: due }) : null));
+    });
+  }
+  function render() {
+    view = readHash();
+    renderTabs();
+    var root = $("#app"); root.textContent = "";
+    var fn = { study: viewStudy, decks: viewDecks, make: viewMake, quiz: viewQuiz, room: viewRoom, progress: viewProgress }[view];
+    root.append(fn());
+  }
+  window.addEventListener("hashchange", function () { aiAbort(); render(); window.scrollTo(0, 0); });
+
+  var themeBtn = $("#themeBtn");
+  function applyTheme() { if (S.prefs.theme) document.documentElement.setAttribute("data-theme", S.prefs.theme); }
+  themeBtn.addEventListener("click", function () {
+    var cur = document.documentElement.getAttribute("data-theme");
+    if (!cur) cur = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+    S.prefs.theme = cur === "dark" ? "light" : "dark";
+    applyTheme(); save();
+  });
+  applyTheme();
+
+  var aiCtl = null;
+  function aiAbort() { if (aiCtl) { try { aiCtl.abort(); } catch (e) {} aiCtl = null; } }
+  function streamTo(out, prompt, done) {
+    aiAbort();
+    var ctl = new AbortController(); aiCtl = ctl;
+    out.textContent = "Thinking...";
+    sample(prompt, { signal: ctl.signal, cache: false, modelTier: "quick", onText: function (u) { out.textContent = u.text; } })
+      .then(function (r) { if (done) done(r.text); })
+      .catch(function (e) {
+        if (e && e.code === "cancelled") return;
+        out.textContent = (e && e.text ? e.text + "\n\n" : "") + aiError(e);
+      })
+      .then(function () { if (aiCtl === ctl) aiCtl = null; });
+  }
+
+  /* ---------- Study ---------- */
+  var scope = "all";
+  var sess = null;
+  var typedAnswer = "";
+
+  function deckSelect(id, value, withAll, onChange) {
+    var s = el("select", { id: id },
+      withAll ? el("option", { value: "all", text: "All decks" }) : null,
+      S.decks.map(function (d) { return el("option", { value: d.id, text: d.name }); }));
+    s.value = value;
+    if (s.value !== value) s.value = withAll ? "all" : (S.decks[0] ? S.decks[0].id : "");
+    if (onChange) s.addEventListener("change", function () { onChange(s.value); });
+    return s;
+  }
+
+  function startSession(weak) {
+    var now = Date.now(), cs = allCards(scope), ids;
+    if (weak) {
+      ids = cs.filter(function (x) { return x.card.lapses > 0; })
+        .sort(function (a, b) { return b.card.lapses - a.card.lapses; }).slice(0, 15).map(function (x) { return x.card.id; });
+    } else {
+      var due = cs.filter(function (x) { return x.card.due > 0 && x.card.due <= now; }).sort(function (a, b) { return a.card.due - b.card.due; });
+      var c = counts(scope);
+      var fresh = cs.filter(function (x) { return x.card.due === 0; }).slice(0, c.newAvail);
+      ids = due.concat(fresh).map(function (x) { return x.card.id; });
+    }
+    if (!ids.length) { toast(weak ? "No weak cards yet. Cards you miss will show up here." : "Nothing is due right now."); return; }
+    sess = { queue: ids, pos: 0, revealed: false, ok: 0, done: 0, weak: !!weak };
+    typedAnswer = "";
+    render();
+  }
+
+  function viewStudy() {
+    return sess ? studySession() : studyHome();
+  }
+
+  function studyHome() {
+    var c = counts(scope), today = S.log[dayKey()] || { n: 0 };
+    var total = c.due + c.newAvail;
+    var left = el("div", { class: "panel stack" },
+      el("div", { class: "eyebrow", text: "Today" }),
+      el("h2", null, total > 0 ? "You have " : "You are ", el("span", { class: "mark" }, total > 0 ? plural(total, "card") + " to go" : "all caught up")),
+      el("div", { class: "counts" },
+        el("div", null, el("b", { text: c.due }), el("span", { text: "due for review" })),
+        el("div", null, el("b", { text: c.newAvail }), el("span", { text: "new today" })),
+        el("div", null, el("b", { text: streak() }), el("span", { text: "day streak" }))),
+      el("div", { class: "row" },
+        el("button", { class: "btn", type: "button", disabled: total === 0, on: { click: function () { startSession(false); } } }, total > 0 ? "Start session" : "Nothing due"),
+        el("button", { class: "btn ghost", type: "button", on: { click: function () { startSession(true); } } }, "Drill weak cards")),
+      today.n > 0 ? el("p", { class: "small muted", text: "Reviewed " + plural(today.n, "card") + " so far today." }) : null,
+      S.decks.length === 0 ? el("p", { class: "muted" }, "You have no decks yet. ", el("a", { href: "#make", text: "Make your first cards" }), ".") : null);
+
+    var right = el("div", { class: "panel stack" },
+      el("h3", { text: "How this session works" }),
+      el("label", { class: "f", for: "scope" }, "Deck", deckSelect("scope", scope, true, function (v) { scope = v; render(); })),
+      el("label", { class: "check" },
+        el("input", { type: "checkbox", checked: S.prefs.typeFirst, on: { change: function (e) { S.prefs.typeFirst = e.target.checked; save(); } } }),
+        "Type my answer before I see it"),
+      el("label", { class: "f", for: "npd" }, "New cards per day",
+        el("input", { id: "npd", type: "number", min: 0, max: 100, value: S.prefs.newPerDay, on: { change: function (e) {
+          var n = parseInt(e.target.value, 10); S.prefs.newPerDay = isNaN(n) ? 10 : Math.max(0, Math.min(100, n)); save(); render(); } } })),
+      el("p", { class: "small muted" }, "Cards you know come back less often. Cards you miss come back sooner. Keys: space shows the answer, 1 to 4 rates it."));
+    return el("div", { class: "hero" }, left, right);
+  }
+
+  function similarity(a, b) {
+    if (a === b) return 1;
+    var m = a.length, n = b.length;
+    if (!m || !n) return 0;
+    var prev = [], cur = [], i, j;
+    for (j = 0; j <= n; j++) prev[j] = j;
+    for (i = 1; i <= m; i++) {
+      cur[0] = i;
+      for (j = 1; j <= n; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+      var t = prev; prev = cur; cur = t;
+    }
+    return 1 - prev[n] / Math.max(m, n);
+  }
+  function norm(s) { return String(s).toLowerCase().replace(/[^\p{L}\p{N}\s]/gu, "").replace(/\s+/g, " ").trim(); }
+  function judge(typed, answer) {
+    if (!typed.trim()) return { kind: "miss", text: "You left it blank. Try recalling before you look next time." };
+    if (answer.length > 90) return { kind: "close", text: "Compare your answer with the card below." };
+    var s = similarity(norm(typed), norm(answer));
+    if (s >= 0.97) return { kind: "good", text: "That matches." };
+    if (s >= 0.72) return { kind: "close", text: "Close. Check the small differences." };
+    return { kind: "miss", text: "Not quite. Compare it with the answer." };
+  }
+
+  function currentCard() {
+    while (sess && sess.pos < sess.queue.length) {
+      var f = findCard(sess.queue[sess.pos]);
+      if (f) return f;
+      sess.pos++;
+    }
+    return null;
+  }
+
+  function reveal() {
+    if (!sess || sess.revealed) return;
+    var inp = $("#typed"); if (inp) typedAnswer = inp.value;
+    sess.revealed = true; render();
+  }
+  function rate(r) {
+    var f = currentCard(); if (!f || !sess.revealed) return;
+    var card = f.card, wasNew = card.due === 0;
+    var up = schedule(card, r);
+    card.ease = up.ease; card.interval = up.interval; card.reps = up.reps; card.lapses = up.lapses; card.due = up.due;
+    var lg = logToday(); lg.n++; if (r > 0) lg.ok++; if (wasNew) lg.nw++;
+    sess.done++; if (r > 0) sess.ok++;
+    if (r === 0) sess.queue.push(card.id);
+    sess.pos++; sess.revealed = false; typedAnswer = "";
+    save(); pushPresence(); render();
+  }
+
+  function studySession() {
+    var f = currentCard();
+    if (!f) {
+      var res = el("div", { class: "panel stack" },
+        el("div", { class: "eyebrow", text: "Session complete" }),
+        el("h2", null, "Nice work. ", el("span", { class: "mark" }, plural(sess.done, "review") + " done")),
+        el("p", { class: "muted", text: sess.ok + " of " + sess.done + " went without pressing Again. Streak: " + plural(streak(), "day") + "." }),
+        el("div", { class: "row" },
+          el("button", { class: "btn", type: "button", on: { click: function () { sess = null; render(); } } }, "Back to today"),
+          el("a", { class: "btn ghost", href: "#room", style: "text-decoration:none" }, "Open a study room")));
+      return res;
+    }
+    var card = f.card;
+    var total = sess.queue.length;
+    var head = el("div", { class: "fc-head" },
+      el("span", { text: f.deck.name }),
+      el("span", { class: "mono", text: card.due === 0 ? "New card" : "Interval " + fmtInterval((card.interval || 0) * 1440 || 10) }));
+    var body = el("div", { class: "fc-body" }, el("div", { class: "fc-q", text: card.front }));
+    var foot = el("div", { class: "fc-foot" });
+    if (!sess.revealed) {
+      if (S.prefs.typeFirst) {
+        foot.append(
+          el("label", { class: "f", for: "typed" }, "Your answer",
+            el("input", { id: "typed", type: "text", autocomplete: "off", placeholder: "Type what you remember", value: typedAnswer,
+              on: { keydown: function (e) { if (e.key === "Enter") { e.preventDefault(); reveal(); } } } })),
+          el("button", { class: "btn", type: "button", on: { click: reveal } }, "Check answer"));
+      } else {
+        foot.append(el("button", { class: "btn", type: "button", on: { click: reveal } }, "Show answer"));
+      }
+    } else {
+      body.append(el("div", { class: "fc-a", text: card.back }));
+      if (S.prefs.typeFirst) {
+        var v = judge(typedAnswer, card.back);
+        foot.append(el("div", { class: "verdict " + v.kind }, el("b", { text: "You wrote: " }), typedAnswer.trim() || "(blank)", el("br"), v.text));
+      }
+      var out = el("div", { class: "aibox", id: "ai-out", hidden: true });
+      var aiRow = el("div", { class: "row needs-ai" },
+        el("button", { class: "btn ghost sm", type: "button", on: { click: function () {
+          out.hidden = false;
+          streamTo(out, "You are a patient tutor. A student is studying this flashcard.\nQuestion: " + card.front + "\nAnswer: " + card.back + "\nExplain the idea in under 80 words using plain words and one concrete example. No markdown.");
+        } } }, "Explain it another way"),
+        el("button", { class: "btn ghost sm", type: "button", on: { click: function () {
+          out.hidden = false;
+          streamTo(out, "You are a study coach. Give one short memory trick (a mnemonic, image or pattern) to remember this flashcard.\nQuestion: " + card.front + "\nAnswer: " + card.back + "\nUnder 50 words. No markdown.");
+        } } }, "Give me a memory trick"));
+      var labels = ["Again", "Hard", "Good", "Easy"];
+      var rate_ = el("div", { class: "rate" }, labels.map(function (l, i) {
+        return el("button", { class: "r" + i, type: "button", on: { click: function () { rate(i); } } },
+          l, el("small", { text: fmtInterval(schedule(card, i)._min) + "  [" + (i + 1) + "]" }));
+      }));
+      foot.append(rate_, aiRow, out);
+    }
+    return el("div", { class: "stack" },
+      el("div", { class: "row" },
+        el("div", { class: "grow" }, el("div", { class: "track" }, el("i", { style: "width:" + Math.round(sess.pos / total * 100) + "%" }))),
+        el("span", { class: "mono small muted", text: Math.min(sess.pos + 1, total) + " / " + total }),
+        el("button", { class: "btn ghost sm", type: "button", on: { click: function () { aiAbort(); sess = null; render(); } } }, "End session")),
+      el("div", { class: "fc" }, head, body, foot));
+  }
+
+  document.addEventListener("keydown", function (e) {
+    if (view !== "study" || !sess || e.metaKey || e.ctrlKey || e.altKey) return;
+    var t = e.target && e.target.tagName;
+    if (t === "INPUT" || t === "TEXTAREA" || t === "SELECT") return;
+    if (!sess.revealed && (e.key === " " || e.key === "Enter") && currentCard()) { e.preventDefault(); reveal(); }
+    else if (sess.revealed && "1234".indexOf(e.key) > -1 && e.key.length === 1) { rate(parseInt(e.key, 10) - 1); }
+  });
+
+  /* ---------- Decks ---------- */
+  var openDeckId = null, pendingDelete = null, editingId = null;
+
+  function csvOf(deck) {
+    return deck.cards.map(function (c) {
+      return '"' + c.front.replace(/"/g, '""') + '","' + c.back.replace(/"/g, '""') + '"';
+    }).join("\n");
+  }
+  function slug(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "deck"; }
+  function dueText(card) {
+    if (card.due === 0) return "New";
+    var diff = card.due - Date.now();
+    if (diff <= 0) return "Due now";
+    return "Due in " + fmtInterval(diff / 60000);
+  }
+
+  function viewDecks() {
+    if (openDeckId && findDeck(openDeckId)) return deckDetail(findDeck(openDeckId));
+    openDeckId = null;
+    var newName = el("input", { id: "newDeck", type: "text", placeholder: "Deck name, for example Chemistry Unit 3", maxLength: 60 });
+    function create() {
+      var n = newName.value.trim(); if (!n) { toast("Give the deck a name first."); return; }
+      var d = { id: uid(), name: n, cards: [] }; S.decks.push(d); save(); openDeckId = d.id; render();
+    }
+    newName.addEventListener("keydown", function (e) { if (e.key === "Enter") create(); });
+    var list = el("div", { class: "decks" }, S.decks.map(function (d) {
+      var c = counts(d.id);
+      return el("div", { class: "panel deck" },
+        el("div", { class: "row" }, el("h3", { text: d.name }), d.sample ? el("span", { class: "pill", text: "Sample" }) : null),
+        el("div", { class: "small muted", text: plural(c.total, "card") + " · " + c.due + " due · " + c.fresh + " new" }),
+        el("div", { class: "row" },
+          el("button", { class: "btn sm", type: "button", on: { click: function () { scope = d.id; sess = null; location.hash = "#study"; } } }, "Study"),
+          el("button", { class: "btn ghost sm", type: "button", on: { click: function () { openDeckId = d.id; render(); } } }, "Open")));
+    }));
+    var backup = el("div", { class: "panel stack" },
+      el("h3", { text: "Back up your decks" }),
+      el("p", { class: "small muted", text: db && meId && cloud !== "readonly" ? "Your decks and progress are saved to your account and open on any device where you sign in to this page. A backup file is an extra copy." : "Decks are saved on this device only. Download a backup file so you can restore them elsewhere." }),
+      el("div", { class: "row" },
+        db && meId && cloud !== "readonly" ? el("button", { class: "btn ghost sm", type: "button", on: { click: function () {
+          toast("Reloading from your account...");
+          flushNow().then(function () { return pull(); }).then(function () { toast("Up to date."); render(); }).catch(function () { toast("Could not reach your account."); });
+        } } }, "Reload from my account") : null,
+        el("button", { class: "btn ghost sm needs-dl", type: "button", on: { click: function () { saveFile("knowme-backup.json", JSON.stringify(S)); } } }, "Download backup"),
+        el("label", { class: "btn ghost sm", for: "restore" }, "Restore from file",
+          el("input", { id: "restore", type: "file", accept: ".json,application/json", style: "display:none", on: { change: function (e) {
+            var f = e.target.files && e.target.files[0]; if (!f) return;
+            var rd = new FileReader();
+            rd.onload = function () {
+              try {
+                var o = JSON.parse(String(rd.result));
+                if (!o || !Array.isArray(o.decks)) throw new Error("bad");
+                var d = defaults();
+                S = { decks: o.decks, log: o.log || {}, prefs: Object.assign(d.prefs, o.prefs || {}) };
+                save(); toast("Backup restored."); render();
+              } catch (err) { toast("That file is not a KnowMe backup."); }
+            };
+            rd.readAsText(f);
+          } } }))));
+    var library = db && meId ? el("div", { class: "panel stack" },
+      el("h3", { text: "Class library" }),
+      el("p", { class: "small muted", text: "Decks that classmates chose to share. Add one to your own decks to study it. Shared copies are snapshots, so later edits do not change them." }),
+      el("div", { id: "lib" })) : null;
+    if (library) setTimeout(drawLibrary, 0);
+    return el("div", { class: "stack" },
+      el("div", { class: "panel stack" },
+        el("h2", { text: "Your decks" }),
+        el("div", { class: "row" },
+          el("div", { class: "grow" }, newName),
+          el("button", { class: "btn", type: "button", on: { click: create } }, "Create deck"))),
+      S.decks.length ? list : el("p", { class: "muted", text: "No decks yet. Create one above, or paste notes in Make cards." }),
+      library, backup);
+  }
+
+  function deckDetail(deck) {
+    var front = el("textarea", { id: "nf", placeholder: "Question or term", rows: 2, style: "min-height:70px" });
+    var back = el("textarea", { id: "nb", placeholder: "Answer or definition", rows: 2, style: "min-height:70px" });
+    function add() {
+      var f = front.value.trim(), b = back.value.trim();
+      if (!f || !b) { toast("Fill in both sides."); return; }
+      deck.cards.push(newCard(f, b)); save(); render(); toast("Card added.");
+    }
+    var rows = deck.cards.map(function (c) {
+      if (editingId === c.id) {
+        var ef = el("textarea", { value: c.front, style: "min-height:64px" }), eb = el("textarea", { value: c.back, style: "min-height:64px" });
+        return el("div", { class: "cardrow" }, ef, eb,
+          el("div", { class: "acts" },
+            el("button", { class: "btn sm", type: "button", on: { click: function () {
+              if (!ef.value.trim() || !eb.value.trim()) { toast("Both sides need text."); return; }
+              c.front = ef.value.trim(); c.back = eb.value.trim(); editingId = null; save(); render(); } } }, "Save"),
+            el("button", { class: "btn ghost sm", type: "button", on: { click: function () { editingId = null; render(); } } }, "Cancel")));
+      }
+      var confirming = pendingDelete === c.id;
+      return el("div", { class: "cardrow" },
+        el("div", null, el("div", { text: c.front }), el("div", { class: "small muted mono", text: dueText(c) })),
+        el("div", { class: "muted", text: c.back }),
+        el("div", { class: "acts" },
+          el("button", { class: "btn ghost sm", type: "button", on: { click: function () { editingId = c.id; pendingDelete = null; render(); } } }, "Edit"),
+          el("button", { class: "btn danger sm", type: "button", on: { click: function () {
+            if (!confirming) { pendingDelete = c.id; render(); return; }
+            deck.cards = deck.cards.filter(function (x) { return x.id !== c.id; }); pendingDelete = null; save(); render(); } } }, confirming ? "Confirm delete" : "Delete")));
+    });
+    var delConfirm = pendingDelete === "deck:" + deck.id;
+    return el("div", { class: "stack" },
+      el("div", { class: "row" },
+        el("button", { class: "btn ghost sm", type: "button", on: { click: function () { openDeckId = null; pendingDelete = null; editingId = null; render(); } } }, "All decks"),
+        el("h2", { text: deck.name })),
+      el("div", { class: "panel stack" },
+        el("h3", { text: "Add a card" }),
+        el("div", { class: "row" }, el("div", { class: "grow" }, front), el("div", { class: "grow" }, back)),
+        el("div", { class: "row" },
+          el("button", { class: "btn", type: "button", on: { click: add } }, "Add card"),
+          el("a", { class: "btn ghost", href: "#make", style: "text-decoration:none" }, "Make cards from notes"))),
+      el("div", { class: "panel" },
+        el("h3", { text: plural(deck.cards.length, "card") }),
+        deck.cards.length ? rows : el("p", { class: "muted", text: "This deck is empty." })),
+      el("div", { class: "row" },
+        el("button", { class: "btn ghost sm needs-dl", type: "button", disabled: !deck.cards.length, on: { click: function () { saveFile(slug(deck.name) + ".csv", csvOf(deck)); } } }, "Export as CSV"),
+        db && meId && cloud !== "readonly" && deck.cards.length ? el("button", { class: "btn ghost sm", type: "button", on: { click: function () { toggleShare(deck); } } }, isShared(deck.id) ? "Stop sharing" : "Share to class library") : null,
+        el("button", { class: "btn danger sm", type: "button", on: { click: function () {
+          if (!delConfirm) { pendingDelete = "deck:" + deck.id; render(); return; }
+          S.decks = S.decks.filter(function (d) { return d.id !== deck.id; }); openDeckId = null; pendingDelete = null; save(); render(); } } },
+          delConfirm ? "Confirm: delete this deck and its cards" : "Delete deck")));
+  }
+
+  /* ---------- Make cards ---------- */
+  var draft = { deck: "", newName: "", notes: "", count: 10 };
+  var staged = [];
+  var genCtl = null, genStatus = "";
+
+  function splitLines(text) {
+    var out = [];
+    text.split(/\r?\n/).forEach(function (line) {
+      line = line.trim(); if (!line) return;
+      var m = line.match(/^(.{1,200}?)\s*(?:\t|\s[-–—]\s|::|:|;)\s*(.+)$/);
+      if (m && m[1].trim() && m[2].trim()) out.push({ front: m[1].trim(), back: m[2].trim(), on: true });
+    });
+    return out;
+  }
+
+  function viewMake() {
+    if (!draft.deck || (draft.deck !== "__new" && !findDeck(draft.deck))) draft.deck = S.decks[0] ? S.decks[0].id : "__new";
+    var sel = el("select", { id: "mkDeck" },
+      S.decks.map(function (d) { return el("option", { value: d.id, text: d.name }); }),
+      el("option", { value: "__new", text: "New deck..." }));
+    sel.value = draft.deck;
+    var nn = el("input", { id: "mkName", type: "text", placeholder: "Name the new deck", maxLength: 60, value: draft.newName, on: { input: function (e) { draft.newName = e.target.value; } } });
+    var nnWrap = el("label", { class: "f grow", for: "mkName", hidden: draft.deck !== "__new" }, "New deck name", nn);
+    sel.addEventListener("change", function () { draft.deck = sel.value; nnWrap.hidden = sel.value !== "__new"; });
+
+    var notes = el("textarea", { id: "mkNotes", rows: 9, value: draft.notes, placeholder: "Paste class notes, a textbook paragraph, or a list like:\nmitosis: cell division that makes two identical cells\nmeiosis: cell division that makes four gametes",
+      on: { input: function (e) { draft.notes = e.target.value; } } });
+    var cnt = el("select", { id: "mkCount", on: { change: function (e) { draft.count = parseInt(e.target.value, 10); } } },
+      [5, 10, 15, 20].map(function (n) { return el("option", { value: n, text: n + " cards" }); }));
+    cnt.value = String(draft.count);
+
+    var status = el("p", { class: "small muted", id: "mkStatus", text: genStatus });
+    var stagedBox = el("div", { id: "stagedBox" });
+    var genBtn = el("button", { class: "btn needs-ai", type: "button", id: "genBtn" }, "Generate with Claude");
+    var stopBtn = el("button", { class: "btn ghost needs-ai", type: "button", hidden: !genCtl }, "Stop");
+
+    genBtn.addEventListener("click", function () {
+      var text = notes.value.trim();
+      if (text.length < 20) { toast("Paste a few lines of notes first."); return; }
+      if (!sample) { toast("Claude is not available in this view."); return; }
+      var n = draft.count;
+      genCtl = new AbortController();
+      genBtn.disabled = true; stopBtn.hidden = false; status.textContent = "Thinking...";
+      var prompt = "You write flashcards for a student.\nTurn the notes below into at most " + n + " flashcards.\nRules: one fact per card; the front is a short, specific question or term (never \"What is this?\"); the back is a short answer of at most 25 words; skip anything not worth memorising; keep the language of the notes.\nReply with only a JSON array like [{\"front\":\"...\",\"back\":\"...\"}].\n\nNOTES:\n" + text.slice(0, 12000);
+      sample.json(prompt, { signal: genCtl.signal }).then(function (arr) {
+        var good = (Array.isArray(arr) ? arr : []).filter(function (c) { return c && typeof c.front === "string" && typeof c.back === "string" && c.front.trim() && c.back.trim(); })
+          .slice(0, n).map(function (c) { return { front: c.front.trim(), back: c.back.trim(), on: true }; });
+        if (!good.length) throw { code: "invalid_json" };
+        staged = good; genStatus = "Claude made " + plural(good.length, "card") + ". Edit or untick any, then add them.";
+      }).catch(function (e) {
+        if (e && e.code === "cancelled") { genStatus = "Stopped."; return; }
+        genStatus = aiError(e);
+      }).then(function () {
+        genCtl = null; genBtn.disabled = false; stopBtn.hidden = true;
+        status.textContent = genStatus; drawStaged(stagedBox);
+      });
+    });
+    stopBtn.addEventListener("click", function () { if (genCtl) genCtl.abort(); });
+
+    var splitBtn = el("button", { class: "btn ghost", type: "button", on: { click: function () {
+      var found = splitLines(notes.value);
+      if (!found.length) { genStatus = "No pairs found. Put one pair per line, like term: definition."; }
+      else { staged = found; genStatus = "Found " + plural(found.length, "pair") + ". Edit or untick any, then add them."; }
+      status.textContent = genStatus; drawStaged(stagedBox);
+    } } }, "Split lines into cards");
+
+    drawStaged(stagedBox);
+    return el("div", { class: "stack" },
+      el("div", { class: "panel stack" },
+        el("h2", null, "Turn notes into ", el("span", { class: "mark", text: "cards" })),
+        el("p", { class: "muted", text: "Typing every card by hand is why most people quit. Paste your notes and let the cards write themselves, then keep the ones you want." }),
+        el("div", { class: "row" },
+          el("label", { class: "f grow", for: "mkDeck" }, "Add to deck", sel), nnWrap,
+          el("label", { class: "f needs-ai", for: "mkCount" }, "How many", cnt)),
+        el("label", { class: "f", for: "mkNotes" }, "Your notes", notes),
+        el("div", { class: "row" }, genBtn, stopBtn, splitBtn),
+        el("p", { class: "small muted no-ai-note", text: "Claude card writing works when this page is open in Claude. The line splitter works anywhere." }),
+        status),
+      stagedBox);
+  }
+
+  function drawStaged(box) {
+    box.textContent = "";
+    if (!staged.length) return;
+    var on = staged.filter(function (s) { return s.on; }).length;
+    var addBtn = el("button", { class: "btn", type: "button", disabled: on === 0, on: { click: function () {
+      var deck;
+      if (draft.deck === "__new") {
+        var nm = draft.newName.trim(); if (!nm) { toast("Name the new deck first."); return; }
+        deck = { id: uid(), name: nm, cards: [] }; S.decks.push(deck); draft.deck = deck.id; draft.newName = "";
+      } else deck = findDeck(draft.deck);
+      if (!deck) { toast("Pick a deck first."); return; }
+      var add = staged.filter(function (s) { return s.on && s.front.trim() && s.back.trim(); });
+      add.forEach(function (s) { deck.cards.push(newCard(s.front.trim(), s.back.trim())); });
+      staged = []; genStatus = ""; save(); toast("Added " + plural(add.length, "card") + " to " + deck.name + "."); render();
+    } } }, "Add " + plural(on, "card") + " to deck");
+    var rows = staged.map(function (s) {
+      return el("div", { class: "stagedrow" },
+        el("input", { type: "checkbox", checked: s.on, "aria-label": "Keep this card", on: { change: function (e) { s.on = e.target.checked; drawStaged(box); } } }),
+        el("textarea", { value: s.front, "aria-label": "Front", on: { input: function (e) { s.front = e.target.value; } } }),
+        el("textarea", { value: s.back, "aria-label": "Back", on: { input: function (e) { s.back = e.target.value; } } }));
+    });
+    box.append(el("div", { class: "panel stack" }, el("h3", { text: "Preview" }), el("div", null, rows), el("div", { class: "row" }, addBtn)));
+  }
+
+  /* ---------- Quiz ---------- */
+  var quiz = null, qDeck = "", qMode = "mc", qLen = 10;
+
+  function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var j = Math.floor(Math.random() * (i + 1)); var t = a[i]; a[i] = a[j]; a[j] = t; } return a; }
+
+  function viewQuiz() {
+    if (quiz) return quiz.finished ? quizResult() : quizQuestion();
+    var usable = S.decks.filter(function (d) { return d.cards.length >= 2; });
+    if (!usable.length) return el("div", { class: "panel stack" }, el("h2", { text: "Quiz" }), el("p", { class: "muted" }, "A quiz needs a deck with at least 2 cards. ", el("a", { href: "#make", text: "Make some cards" }), "."));
+    if (!qDeck || !findDeck(qDeck)) qDeck = usable[0].id;
+    var ds = el("select", { id: "qDeck" }, usable.map(function (d) { return el("option", { value: d.id, text: d.name + " (" + d.cards.length + ")" }); }));
+    ds.value = qDeck; ds.addEventListener("change", function () { qDeck = ds.value; });
+    var seg = el("div", { class: "seg", role: "group", "aria-label": "Quiz type" },
+      el("button", { type: "button", "aria-pressed": qMode === "mc", on: { click: function () { qMode = "mc"; render(); } } }, "Multiple choice"),
+      el("button", { type: "button", "aria-pressed": qMode === "type", on: { click: function () { qMode = "type"; render(); } } }, "Type the answer"));
+    var len = el("select", { id: "qLen" }, [5, 10, 20].map(function (n) { return el("option", { value: n, text: n + " questions" }); }));
+    len.value = String(qLen); len.addEventListener("change", function () { qLen = parseInt(len.value, 10); });
+    return el("div", { class: "panel stack" },
+      el("h2", null, "Test yourself, ", el("span", { class: "mark", text: "no peeking" })),
+      el("p", { class: "muted", text: "Quizzes use active recall. Cards you miss go straight back into your study queue." }),
+      el("div", { class: "row" }, el("label", { class: "f grow", for: "qDeck" }, "Deck", ds), el("label", { class: "f", for: "qLen" }, "Length", len)),
+      seg,
+      el("div", { class: "row" }, el("button", { class: "btn", type: "button", on: { click: startQuiz } }, "Start quiz")));
+  }
+
+  function startQuiz() {
+    var deck = findDeck(qDeck); if (!deck) return;
+    var picked = shuffle(deck.cards).slice(0, qLen);
+    var mode = qMode;
+    if (mode === "mc" && deck.cards.length < 3) { mode = "type"; toast("Multiple choice needs 3 cards. Switched to typing."); }
+    quiz = { deck: deck, mode: mode, qs: picked.map(function (c) {
+      var others = shuffle(deck.cards.filter(function (x) { return x.id !== c.id && norm(x.back) !== norm(c.back); })).slice(0, 3).map(function (x) { return x.back; });
+      return { card: c, options: shuffle(others.concat([c.back])), answered: false, correct: false, typed: "" };
+    }), i: 0, finished: false };
+    render();
+  }
+
+  function quizQuestion() {
+    var q = quiz.qs[quiz.i], total = quiz.qs.length;
+    var body = el("div", { class: "fc-body" }, el("div", { class: "fc-q", text: q.card.front }));
+    var foot = el("div", { class: "fc-foot" });
+    function next() { if (quiz.i + 1 >= total) quiz.finished = true; else quiz.i++; render(); }
+    if (quiz.mode === "mc") {
+      var opts = el("div", { class: "opts" }, q.options.map(function (o) {
+        var b = el("button", { class: "opt", type: "button", text: o, on: { click: function () {
+          if (q.answered) return;
+          q.answered = true; q.correct = o === q.card.back; q.picked = o; render(); } } });
+        if (q.answered) {
+          b.disabled = true;
+          if (o === q.card.back) b.classList.add("right");
+          else if (o === q.picked) b.classList.add("wrong");
+        }
+        return b;
+      }));
+      foot.append(opts);
+    } else if (!q.answered) {
+      var inp = el("input", { id: "qType", type: "text", autocomplete: "off", placeholder: "Type your answer" });
+      function check() {
+        q.typed = inp.value; var v = judge(q.typed, q.card.back);
+        q.correct = v.kind === "good" || (v.kind === "close" && q.card.back.length <= 90 && similarity(norm(q.typed), norm(q.card.back)) >= 0.85);
+        q.answered = true; render();
+      }
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") { e.preventDefault(); check(); } });
+      foot.append(el("label", { class: "f", for: "qType" }, "Your answer", inp), el("button", { class: "btn", type: "button", on: { click: check } }, "Check"));
+    } else {
+      foot.append(el("div", { class: "verdict " + (q.correct ? "good" : "miss") }, el("b", { text: "You wrote: " }), q.typed.trim() || "(blank)"));
+    }
+    if (q.answered) {
+      if (!q.correct) body.append(el("div", { class: "fc-a", text: q.card.back }));
+      foot.append(el("div", { class: "row" },
+        el("span", { class: "pill " + (q.correct ? "" : "warn"), text: q.correct ? "Correct" : "Not this time" }),
+        el("button", { class: "btn", type: "button", on: { click: next } }, quiz.i + 1 >= total ? "See results" : "Next question")));
+    }
+    return el("div", { class: "stack" },
+      el("div", { class: "row" },
+        el("div", { class: "grow" }, el("div", { class: "track" }, el("i", { style: "width:" + Math.round(quiz.i / total * 100) + "%" }))),
+        el("span", { class: "mono small muted", text: (quiz.i + 1) + " / " + total }),
+        el("button", { class: "btn ghost sm", type: "button", on: { click: function () { quiz = null; render(); } } }, "Quit")),
+      el("div", { class: "fc" }, el("div", { class: "fc-head" }, el("span", { text: quiz.deck.name }), el("span", { text: quiz.mode === "mc" ? "Multiple choice" : "Type the answer" })), body, foot));
+  }
+
+  function quizResult() {
+    var total = quiz.qs.length;
+    var ok = quiz.qs.filter(function (q) { return q.correct; }).length;
+    var missed = quiz.qs.filter(function (q) { return !q.correct; });
+    return el("div", { class: "panel stack" },
+      el("div", { class: "eyebrow", text: "Quiz finished" }),
+      el("h2", null, "You scored ", el("span", { class: "mark mono", text: ok + " / " + total })),
+      missed.length ? el("div", null, el("h3", { text: "Review these" }), missed.map(function (q) {
+        return el("div", { class: "cardrow" }, el("div", { text: q.card.front }), el("div", { class: "muted", text: q.card.back }), el("span"));
+      })) : el("p", { class: "muted", text: "Every answer was right. Try a longer quiz or a different deck." }),
+      el("div", { class: "row" },
+        missed.length ? el("button", { class: "btn", type: "button", on: { click: function () {
+          missed.forEach(function (q) { q.card.due = Date.now(); q.card.lapses = (q.card.lapses || 0) + 1; });
+          save(); toast(plural(missed.length, "card") + " added to your study queue."); quiz = null; render();
+        } } }, "Send missed cards to study") : null,
+        el("button", { class: "btn ghost", type: "button", on: { click: function () { quiz = null; render(); } } }, "Back to quiz setup")));
+  }
+
+  /* ---------- Study with me (room + focus timer) ---------- */
+  var T = { mode: "focus", running: false, endsAt: 0, remaining: S.prefs.focusMin * 60000 };
+  var curRoom = null, unPeers = null, joining = false, roomMsg = "";
+
+  function fmtClock(ms) {
+    ms = Math.max(0, ms); var s = Math.ceil(ms / 1000), m = Math.floor(s / 60);
+    return String(m).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0");
+  }
+  function timerLeft() { return T.running ? Math.max(0, T.endsAt - Date.now()) : T.remaining; }
+  function myPresence() {
+    return { nick: (S.prefs.nick || "Student").slice(0, 24), status: T.running ? T.mode : "idle", endsAt: T.running ? T.endsAt : null, cards: (S.log[dayKey()] || { n: 0 }).n };
+  }
+  function pushPresence() { if (curRoom) { try { curRoom.presence(myPresence()).catch(function () {}); } catch (e) {} } }
+
+  function timerStart() {
+    if (T.running) return;
+    if (T.remaining <= 0) T.remaining = (T.mode === "focus" ? S.prefs.focusMin : S.prefs.breakMin) * 60000;
+    T.running = true; T.endsAt = Date.now() + T.remaining; pushPresence(); render();
+  }
+  function timerPause() { if (!T.running) return; T.remaining = Math.max(0, T.endsAt - Date.now()); T.running = false; pushPresence(); render(); }
+  function timerReset() { T.running = false; T.remaining = (T.mode === "focus" ? S.prefs.focusMin : S.prefs.breakMin) * 60000; pushPresence(); render(); }
+  function timerSwitch(mode) { T.mode = mode; T.running = false; T.remaining = (mode === "focus" ? S.prefs.focusMin : S.prefs.breakMin) * 60000; pushPresence(); render(); }
+
+  setInterval(function () {
+    if (T.running && Date.now() >= T.endsAt) {
+      var was = T.mode; T.running = false;
+      T.mode = was === "focus" ? "break" : "focus";
+      T.remaining = (T.mode === "focus" ? S.prefs.focusMin : S.prefs.breakMin) * 60000;
+      toast(was === "focus" ? "Focus block done. Take a break." : "Break over. Ready for the next block?");
+      pushPresence(); if (view === "room") render(); return;
+    }
+    if (view === "room") { var c = $("#clock"); if (c) c.textContent = fmtClock(timerLeft()); drawPeers(); }
+  }, 1000);
+
+  function cleanCode(s) { return String(s).toLowerCase().trim().replace(/\s+/g, "-").replace(/[^a-z0-9_.-]/g, "").replace(/^[^a-z0-9]+/, "").slice(0, 48); }
+
+  function joinRoom(code) {
+    if (!roomNS || joining) return;
+    code = cleanCode(code);
+    if (!code) { toast("Enter a room code using letters and numbers."); return; }
+    S.prefs.room = code; save(); joining = true; roomMsg = "Joining...";
+    roomNS.join(code).then(function (r) {
+      curRoom = r; joining = false; roomMsg = "";
+      unPeers = r.onPeers(function () { drawPeers(); }, function () { roomMsg = "Lost the connection to the room."; curRoom = null; if (view === "room") render(); });
+      pushPresence(); if (view === "room") render();
+    }).catch(function (e) {
+      joining = false; roomMsg = e && e.code === "not_permitted" ? "Rooms are not available to you on this page." : "Could not join the room. Try again in a moment.";
+      if (view === "room") render();
+    });
+  }
+  function leaveRoom() {
+    if (unPeers) { try { unPeers(); } catch (e) {} unPeers = null; }
+    if (curRoom) { try { curRoom.leave(); } catch (e) {} curRoom = null; }
+    render();
+  }
+
+  function drawPeers() {
+    var box = $("#peers"); if (!box) return;
+    box.textContent = "";
+    if (!curRoom) return;
+    var list = curRoom.peers().filter(function (p) { return p.kind === "viewer"; });
+    if (!list.length) { box.append(el("p", { class: "muted small", text: "Connecting..." })); return; }
+    list.forEach(function (p) {
+      var pr = p.presence || {};
+      var status = pr.status === "focus" || pr.status === "break" ? pr.status : "idle";
+      var left = typeof pr.endsAt === "number" && status !== "idle" ? Math.max(0, pr.endsAt - Date.now()) : null;
+      var cards = typeof pr.cards === "number" ? pr.cards : 0;
+      box.append(el("div", { class: "peer" },
+        el("b", null, String(pr.nick || "Student").slice(0, 24), p.isMe && p.sameTab ? el("span", { class: "pill", style: "margin-left:8px", text: "you" }) : null),
+        el("span", { class: "small" }, el("i", { class: "dot " + status }), status === "focus" ? "Focusing" : status === "break" ? "On a break" : "Here, not timing"),
+        left !== null ? el("span", { class: "mono small muted", text: fmtClock(left) + " left" }) : null,
+        el("span", { class: "small muted", text: plural(cards, "card") + " reviewed today" })));
+    });
+  }
+
+  function viewRoom() {
+    var nick = el("input", { id: "nick", type: "text", maxLength: 24, placeholder: "Your name", value: S.prefs.nick, on: { input: function (e) { S.prefs.nick = e.target.value; save(); } } });
+    var code = el("input", { id: "rcode", type: "text", maxLength: 48, value: S.prefs.room });
+    var focusSel = el("select", { id: "fm", on: { change: function (e) { S.prefs.focusMin = parseInt(e.target.value, 10); save(); if (!T.running && T.mode === "focus") { T.remaining = S.prefs.focusMin * 60000; render(); } } } },
+      [15, 25, 50].map(function (n) { return el("option", { value: n, text: n + " min focus" }); }));
+    focusSel.value = String(S.prefs.focusMin);
+    var breakSel = el("select", { id: "bm", on: { change: function (e) { S.prefs.breakMin = parseInt(e.target.value, 10); save(); if (!T.running && T.mode === "break") { T.remaining = S.prefs.breakMin * 60000; render(); } } } },
+      [5, 10, 15].map(function (n) { return el("option", { value: n, text: n + " min break" }); }));
+    breakSel.value = String(S.prefs.breakMin);
+
+    var total = (T.mode === "focus" ? S.prefs.focusMin : S.prefs.breakMin) * 60000;
+    var pct = Math.round((1 - timerLeft() / total) * 100);
+
+    var timerPanel = el("div", { class: "panel stack" },
+      el("div", { class: "row" },
+        el("span", { class: "pill " + (T.mode === "focus" ? "" : "warn"), text: T.mode === "focus" ? "Focus" : "Break" }),
+        el("div", { class: "seg", role: "group", "aria-label": "Timer mode" },
+          el("button", { type: "button", "aria-pressed": T.mode === "focus", on: { click: function () { timerSwitch("focus"); } } }, "Focus"),
+          el("button", { type: "button", "aria-pressed": T.mode === "break", on: { click: function () { timerSwitch("break"); } } }, "Break"))),
+      el("div", { class: "timer", id: "clock", text: fmtClock(timerLeft()) }),
+      el("div", { class: "track" }, el("i", { style: "width:" + Math.max(0, Math.min(100, pct)) + "%" })),
+      el("div", { class: "row" },
+        T.running ? el("button", { class: "btn", type: "button", on: { click: timerPause } }, "Pause") : el("button", { class: "btn", type: "button", on: { click: timerStart } }, "Start"),
+        el("button", { class: "btn ghost", type: "button", on: { click: timerReset } }, "Reset"),
+        el("a", { class: "btn ghost", href: "#study", style: "text-decoration:none" }, "Go study cards")),
+      el("div", { class: "row" }, focusSel, breakSel));
+
+    var roomPanel = el("div", { class: "panel stack" },
+      el("h3", { text: "Study together" }),
+      roomState === "pending" ? el("p", { class: "muted small", text: "Checking for rooms..." }) :
+      roomState === "none" ? el("p", { class: "muted", text: "Live rooms need this page opened inside Claude by signed-in viewers. The timer above still works on your own." }) :
+      el("div", { class: "stack" },
+        el("p", { class: "small muted", text: "Pick a room code and share it with classmates who can open this page. Everyone with the same code sees who is focusing and how many cards they reviewed." }),
+        el("div", { class: "row" },
+          el("label", { class: "f grow", for: "nick" }, "Your name", nick),
+          el("label", { class: "f grow", for: "rcode" }, "Room code", code)),
+        el("div", { class: "row" },
+          curRoom ? el("button", { class: "btn ghost", type: "button", on: { click: leaveRoom } }, "Leave room") :
+            el("button", { class: "btn", type: "button", disabled: joining, on: { click: function () { S.prefs.nick = nick.value; save(); joinRoom(code.value); } } }, joining ? "Joining..." : "Join room"),
+          curRoom ? el("span", { class: "pill", text: "In room: " + curRoom.name }) : null),
+        roomMsg ? el("p", { class: "small", text: roomMsg }) : null,
+        el("div", { class: "peers", id: "peers" })));
+    setTimeout(drawPeers, 0);
+    return el("div", { class: "stack" },
+      el("div", null, el("h2", null, "Study with ", el("span", { class: "mark", text: "company" })), el("p", { class: "muted", text: "Work in focused blocks, see who else is studying, and keep each other going." })),
+      timerPanel, roomPanel);
+  }
+
+  /* ---------- Progress ---------- */
+  function chart(days) {
+    var ns = "http://www.w3.org/2000/svg";
+    var W = 560, H = 190, L = 32, R = 8, T0 = 16, B = 28;
+    var max = Math.max.apply(null, days.map(function (d) { return d.n; }).concat([5]));
+    var top = Math.ceil(max / 5) * 5;
+    var bw = (W - L - R) / days.length, ph = H - T0 - B;
+    function mk(tag, attrs, text) { var n = document.createElementNS(ns, tag); Object.keys(attrs || {}).forEach(function (k) { n.setAttribute(k, attrs[k]); }); if (text !== undefined) n.textContent = text; return n; }
+    var svg = mk("svg", { viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "Cards reviewed per day over the last 14 days" });
+    [0, top].forEach(function (v) {
+      var y = H - B - (v / top) * ph;
+      svg.append(mk("line", { x1: L, x2: W - R, y1: y, y2: y, class: "axis" }));
+      svg.append(mk("text", { x: L - 6, y: y + 4, "text-anchor": "end" }, String(v)));
+    });
+    days.forEach(function (d, i) {
+      var h = (d.n / top) * ph, x = L + i * bw + bw * 0.18, w = bw * 0.64, y = H - B - h;
+      if (d.n > 0) {
+        svg.append(mk("rect", { x: x, y: y, width: w, height: h, rx: 3, class: "bar" + (d.today ? " today" : "") }));
+        svg.append(mk("text", { x: x + w / 2, y: y - 4, "text-anchor": "middle", class: "val" }, String(d.n)));
+      }
+      svg.append(mk("text", { x: x + w / 2, y: H - 10, "text-anchor": "middle" }, d.today ? "Today" : d.label));
+    });
+    return svg;
+  }
+
+  function viewProgress() {
+    var now = Date.now(), days = [], i, lastN = 0, lastOk = 0;
+    for (i = 13; i >= 0; i--) {
+      var t = now - i * DAY, e = S.log[dayKey(t)] || { n: 0, ok: 0 };
+      days.push({ n: e.n, label: String(new Date(t).getDate()), today: i === 0 });
+      if (i < 7) { lastN += e.n; lastOk += e.ok; }
+    }
+    var cs = allCards("all");
+    var mature = cs.filter(function (x) { return x.card.interval >= 21; }).length;
+    var recall = lastN ? Math.round(lastOk / lastN * 100) + "%" : "n/a";
+    var today = (S.log[dayKey()] || { n: 0 }).n;
+
+    var tiles = el("div", { class: "tiles" },
+      el("div", { class: "tile" }, el("b", { text: streak() }), el("span", { text: "day streak" })),
+      el("div", { class: "tile" }, el("b", { text: today }), el("span", { text: "reviewed today" })),
+      el("div", { class: "tile" }, el("b", { text: mature + "/" + cs.length }), el("span", { text: "cards mastered (21+ day gap)" })),
+      el("div", { class: "tile" }, el("b", { text: recall }), el("span", { text: "recall, last 7 days" })));
+
+    var chartPanel = el("div", { class: "panel stack" }, el("h3", { text: "Cards reviewed, last 14 days" }), el("div", { class: "scroll" }, chart(days)));
+
+    // weak spots
+    var weak = cs.filter(function (x) { return x.card.lapses > 0; }).sort(function (a, b) { return b.card.lapses - a.card.lapses; }).slice(0, 5);
+    var weakPanel = el("div", { class: "panel stack" },
+      el("h3", { text: "Weak spots" }),
+      weak.length ? weak.map(function (x) {
+        return el("div", { class: "cardrow" }, el("div", { text: x.card.front }), el("div", { class: "muted small", text: x.deck.name }), el("span", { class: "pill warn", text: "missed " + x.card.lapses + "x" }));
+      }) : el("p", { class: "muted", text: "No weak cards yet. Cards you press Again on collect here." }),
+      weak.length ? el("div", { class: "row" }, el("button", { class: "btn sm", type: "button", on: { click: function () { scope = "all"; sess = null; location.hash = "#study"; setTimeout(function () { startSession(true); }, 0); } } }, "Drill these")) : null);
+
+    // exam planner
+    var planOut = el("div", { class: "stack" });
+    var examDate = el("input", { id: "examDate", type: "date", value: S.prefs.examDate });
+    var examDeck = deckSelect("examDeck", S.prefs.examDeck || "all", true);
+    function plan() {
+      planOut.textContent = "";
+      S.prefs.examDate = examDate.value; S.prefs.examDeck = examDeck.value; save();
+      if (!examDate.value) return;
+      var p = examDate.value.split("-").map(Number), ex = new Date(p[0], p[1] - 1, p[2]), n0 = new Date(); n0.setHours(0, 0, 0, 0);
+      var daysLeft = Math.round((ex - n0) / DAY);
+      var c = counts(examDeck.value);
+      if (daysLeft < 0) { planOut.append(el("p", { class: "muted", text: "That date has passed." })); return; }
+      if (daysLeft === 0) { planOut.append(el("p", null, el("b", { text: "Exam day." }), " Do one light review session and rest.")); return; }
+      var learnDays = Math.max(1, daysLeft - 2), perDay = Math.ceil(c.fresh / learnDays);
+      planOut.append(
+        el("p", null, el("b", { class: "mono", text: daysLeft }), " " + (daysLeft === 1 ? "day" : "days") + " left. " + plural(c.fresh, "card") + " not learned yet, so aim for ", el("span", { class: "mark mono", text: perDay + " new a day" }), ", and keep the last 2 days for review only."),
+        el("div", { class: "row" },
+          el("button", { class: "btn sm", type: "button", on: { click: function () { S.prefs.newPerDay = Math.max(0, Math.min(100, perDay)); save(); toast("New cards per day set to " + S.prefs.newPerDay + "."); } } }, "Use " + perDay + " as my daily new cards"),
+          el("button", { class: "btn ghost sm needs-ai", type: "button", on: { click: function () {
+            var out = $("#planAI"); out.hidden = false;
+            var wk = weak.map(function (x) { return x.card.front; }).join("; ");
+            streamTo(out, "You are a friendly study coach. A student has an exam in " + daysLeft + " days. They have " + c.total + " cards, " + c.fresh + " not yet learned, " + c.due + " due now, a recall rate of " + recall + " over the last 7 days and a " + streak() + " day streak. Weak cards: " + (wk || "none yet") + ".\nWrite a short day-by-day plan in under 120 words. Plain text, no markdown.");
+          } } }, "Ask Claude for a plan")),
+        el("div", { class: "aibox", id: "planAI", hidden: true }));
+    }
+    examDate.addEventListener("change", plan); examDeck.addEventListener("change", plan);
+    var examPanel = el("div", { class: "panel stack" },
+      el("h3", { text: "Exam countdown" }),
+      el("p", { class: "small muted", text: "Pick your exam date and a deck. KnowMe works out how many new cards to learn each day." }),
+      el("div", { class: "row" }, el("label", { class: "f grow", for: "examDate" }, "Exam date", examDate), el("label", { class: "f grow", for: "examDeck" }, "Deck", examDeck)),
+      planOut);
+    setTimeout(plan, 0);
+
+    return el("div", { class: "stack" }, el("h2", null, "Your ", el("span", { class: "mark", text: "progress" })), tiles, chartPanel,
+      el("div", { class: "decks" }, weakPanel, examPanel));
+  }
+
+  /* ---------- boot ---------- */
+  render();
+  startCloud();
+})();
+</script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.20/dist/lenis.min.js"></script>
+<style id="cinematic">
+/* ===== Cinematic layer: deep tones, glow, glass ===== */
+:root[data-theme="dark"]{--bg:#06080C;--surface:rgba(18,26,36,.58);--field:rgba(4,8,12,.55);--ink:#EAF2F6;--mute:#8FA3B0;--line:rgba(160,200,220,.14);--accent:#5EE6EB;--accent-ink:#021417;--accent-soft:rgba(94,230,235,.10);--marker:rgba(139,124,255,.42);--glow:94,230,235}
+[data-theme="dark"] body::before{content:"";position:fixed;inset:-20vmax;z-index:-1;pointer-events:none;background:radial-gradient(40vmax 40vmax at 15% 10%,rgba(94,230,235,.16),transparent 60%),radial-gradient(45vmax 45vmax at 90% 20%,rgba(139,124,255,.16),transparent 60%),radial-gradient(50vmax 40vmax at 50% 105%,rgba(14,124,134,.22),transparent 60%);animation:kmdrift 28s ease-in-out infinite alternate}
+@keyframes kmdrift{to{transform:translate3d(-3vmax,2vmax,0) scale(1.08)}}
+[data-theme="dark"] .panel,[data-theme="dark"] .tile,[data-theme="dark"] .fc{background:var(--surface);-webkit-backdrop-filter:blur(18px) saturate(140%);backdrop-filter:blur(18px) saturate(140%);border:1px solid var(--line);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 24px 60px -30px rgba(0,0,0,.8)}
+[data-theme="dark"] .fc{box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 0 0 1px rgba(94,230,235,.16),0 0 70px -22px rgba(94,230,235,.38),0 30px 60px -30px rgba(0,0,0,.9)}
+[data-theme="dark"] .fc-head{background:rgba(94,230,235,.08)}
+[data-theme="dark"] .btn:not(.ghost):not(.danger){background:linear-gradient(135deg,#5EE6EB,#7C8CFF);border-color:transparent;box-shadow:0 8px 28px -10px rgba(94,230,235,.7)}
+[data-theme="dark"] .tab[aria-current="page"]{background:rgba(94,230,235,.12);color:var(--ink);border-color:rgba(94,230,235,.4);box-shadow:0 0 24px -6px rgba(94,230,235,.55)}
+[data-theme="dark"] .tab:hover{background:rgba(255,255,255,.05)}
+[data-theme="dark"] .brand h1 span{text-shadow:0 0 28px rgba(94,230,235,.65)}
+[data-theme="dark"] .iconbtn{background:var(--surface);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+/* micro-interactions */
+.rate button,.opt,.tab,.iconbtn{transition:transform .25s cubic-bezier(.2,.8,.2,1),border-color .2s,background .2s,box-shadow .25s}
+.rate button:hover,.opt:hover:not(:disabled){transform:translateY(-2px)}
+.rate button:active,.opt:active:not(:disabled){transform:scale(.97)}
+/* answer flips in */
+.fc-body{perspective:1000px}
+.fc-a{transform-origin:top center;animation:kmflip .55s cubic-bezier(.2,.8,.2,1) both}
+@keyframes kmflip{from{opacity:0;transform:rotateX(-60deg) translateY(-8px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){[data-theme="dark"] body::before,.fc-a{animation:none}.rate button,.opt,.tab,.iconbtn{transition:none}}
+</style>
+<script>
+(function(){
+var RM=window.matchMedia&&matchMedia("(prefers-reduced-motion: reduce)").matches;
+var root=document.documentElement;
+if(!root.getAttribute("data-theme"))root.setAttribute("data-theme","dark");
+var app=document.getElementById("app");
+function $$(s,c){return Array.prototype.slice.call((c||document).querySelectorAll(s));}
+/* Lenis smooth scroll, driven by the GSAP ticker */
+var lenis=null;
+if(!RM&&window.Lenis){
+  lenis=new Lenis({duration:1.15,easing:function(t){return Math.min(1,1.001-Math.pow(2,-10*t));}});
+  if(window.gsap){gsap.ticker.add(function(t){lenis.raf(t*1000);});gsap.ticker.lagSmoothing(0);}
+  else{(function loop(t){lenis.raf(t);requestAnimationFrame(loop);})(0);}
+  window.addEventListener("hashchange",function(){lenis.scrollTo(0,{immediate:true});});
+}
+function guard(){$$("textarea,select,.scroll",app).forEach(function(n){n.setAttribute("data-lenis-prevent","");});}
+function countUp(){
+  $$(".tile b,.counts b",app).forEach(function(b){
+    var raw=b.textContent.trim();if(!/^\d+$/.test(raw))return;
+    var o={v:0};b.textContent="0";
+    gsap.to(o,{v:+raw,duration:1.1,ease:"power2.out",onUpdate:function(){b.textContent=Math.round(o.v);},onComplete:function(){b.textContent=raw;}});
+  });
+}
+function enter(){
+  guard();
+  if(RM||!window.gsap)return;
+  var SEL=".panel,.tile,.fc,.deck";
+  var items=$$(SEL,app).filter(function(n){return !n.parentElement.closest(SEL);});
+  gsap.from($$("h2",app),{opacity:0,y:18,filter:"blur(8px)",duration:.7,ease:"power3.out",clearProps:"all"});
+  gsap.from(items,{opacity:0,y:24,duration:.7,stagger:.07,delay:.08,ease:"power3.out",clearProps:"transform,opacity"});
+  var bars=$$("svg .bar",app);
+  bars.forEach(function(b){b.style.transformBox="fill-box";});
+  if(bars.length)gsap.from(bars,{scaleY:0,transformOrigin:"50% 100%",duration:.9,stagger:.04,delay:.3,ease:"power3.out",clearProps:"all"});
+  countUp();
+}
+function vname(){return location.hash||"#study";}
+var lastView=vname(),lastQ=null,pending=false;
+var q0=app.querySelector(".fc-q");if(q0)lastQ=q0.textContent;
+if(!RM&&window.gsap){gsap.from(".top > *,.tabs .tab",{opacity:0,y:-12,duration:.7,stagger:.05,ease:"power3.out",clearProps:"transform,opacity"});}
+enter();
+new MutationObserver(function(){
+  if(pending)return;pending=true;
+  requestAnimationFrame(function(){
+    pending=false;
+    var v=vname();
+    if(v!==lastView){lastView=v;lastQ=null;enter();}
+    var q=app.querySelector(".fc-q"),qt=q?q.textContent:null;
+    if(qt!==null&&lastQ!==null&&qt!==lastQ&&window.gsap&&!RM){
+      gsap.from(app.querySelector(".fc-body"),{opacity:0,x:40,duration:.45,ease:"power3.out",clearProps:"transform,opacity"});
+    }
+    lastQ=qt;guard();
+  });
+}).observe(app,{childList:true});
+/* magnetic buttons */
+var fine=window.matchMedia&&matchMedia("(pointer: fine)").matches;
+document.addEventListener("pointermove",function(e){
+  var t=e.target;if(!t.closest)return;
+  if(fine&&!RM&&window.gsap){
+    var b=t.closest(".btn:not(:disabled)");
+    if(b){var br=b.getBoundingClientRect();gsap.to(b,{x:(e.clientX-br.left-br.width/2)*.18,y:(e.clientY-br.top-br.height/2)*.28,duration:.35,ease:"power3.out",overwrite:"auto"});}
+  }
+},{passive:true});
+document.addEventListener("pointerout",function(e){
+  if(!(fine&&!RM&&window.gsap)||!e.target.closest)return;
+  var b=e.target.closest(".btn");
+  if(b&&!b.contains(e.relatedTarget))gsap.to(b,{x:0,y:0,duration:.6,ease:"elastic.out(1,.5)",overwrite:"auto"});
+});
+})();
+</script>
+</body></html>
